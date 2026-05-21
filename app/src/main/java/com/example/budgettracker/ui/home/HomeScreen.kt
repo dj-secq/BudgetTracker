@@ -32,6 +32,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.ui.res.stringResource
+import com.example.budgettracker.R
 import com.example.budgettracker.ui.components.BudgetProgressBar
 import com.example.budgettracker.ui.components.MonthPicker
 import com.example.budgettracker.data.local.entity.Account
@@ -48,7 +50,7 @@ fun HomeScreen(
     onNavigateToAddTransaction: () -> Unit,
     onNavigateToAssignBudget: () -> Unit,
     onNavigateToSettings: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -63,14 +65,17 @@ fun HomeScreen(
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         modifier = modifier.fillMaxSize()
-    ) { _ ->
+    ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 24.dp)
                     .windowInsetsPadding(WindowInsets.statusBars),
-                contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp)
+                contentPadding = PaddingValues(
+                    top = 16.dp,
+                    bottom = 24.dp + innerPadding.calculateBottomPadding()
+                )
             ) {
                 // Header: Settings and Centered Total Balance
                 item {
@@ -105,7 +110,7 @@ fun HomeScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = "Total Balance",
+                                    text = stringResource(R.string.total_balance),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium
@@ -142,11 +147,11 @@ fun HomeScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
-                            Text("Monthly Income", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                            Text(stringResource(R.string.monthly_income), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                             Text("+${CurrencyUtils.formatAmount(uiState.totalIncome)}", color = EmeraldGreen, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("Monthly Expenses", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                            Text(stringResource(R.string.monthly_expenses), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                             Text("-${CurrencyUtils.formatAmount(uiState.totalExpenses)}", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                         }
                     }
@@ -173,7 +178,7 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Budgets",
+                            text = stringResource(R.string.budgets_header),
                             color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold

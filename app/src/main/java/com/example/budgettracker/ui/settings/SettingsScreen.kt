@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.example.budgettracker.R
 import com.example.budgettracker.data.repository.ThemeMode
 import kotlin.math.roundToInt
 
@@ -38,7 +40,7 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -57,7 +59,7 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Text(
-                text = "Appearance",
+                text = stringResource(R.string.appearance_header),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -79,7 +81,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Data Management",
+                text = stringResource(R.string.data_management_header),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -96,7 +98,7 @@ fun SettingsScreen(
                 ) {
                     Icon(Icons.Filled.AccountBalanceWallet, contentDescription = "Wallets", tint = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.width(16.dp))
-                    Text("Manage Wallets", fontWeight = FontWeight.Medium)
+                    Text(stringResource(R.string.manage_wallets), fontWeight = FontWeight.Medium)
                 }
             }
 
@@ -111,14 +113,14 @@ fun SettingsScreen(
                 ) {
                     Icon(Icons.Filled.Category, contentDescription = "Categories", tint = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.width(16.dp))
-                    Text("Manage Categories", fontWeight = FontWeight.Medium)
+                    Text(stringResource(R.string.manage_categories), fontWeight = FontWeight.Medium)
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Budgeting Rule",
+                text = stringResource(R.string.budgeting_rule_header),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground

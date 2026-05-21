@@ -23,9 +23,10 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.ui.res.stringResource
+import com.example.budgettracker.R
 import com.example.budgettracker.data.local.entity.CategoryType
 import com.example.budgettracker.data.local.entity.ExpenseClassification
-import com.example.budgettracker.ui.add.AddTransactionViewModel
 import com.example.budgettracker.ui.theme.CategoryColors
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -48,7 +49,7 @@ fun AddTransactionScreen(
     var transactionType by remember { mutableStateOf(CategoryType.EXPENSE) }
     var selectedClassification by remember { mutableStateOf(ExpenseClassification.NONE) }
     
-    var selectedDateMillis by remember { mutableStateOf(System.currentTimeMillis()) }
+    var selectedDateMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDateMillis)
     
@@ -63,7 +64,7 @@ fun AddTransactionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add Transaction") },
+                title = { Text(stringResource(R.string.add_transaction_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -74,7 +75,7 @@ fun AddTransactionScreen(
                 }
             )
         },
-        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0)
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         Column(
             modifier = modifier
@@ -88,7 +89,7 @@ fun AddTransactionScreen(
             OutlinedTextField(
                 value = amount,
                 onValueChange = { if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d*$"))) amount = it },
-                label = { Text("Amount") },
+                label = { Text(stringResource(R.string.amount_label)) },
                 prefix = { Text("₱") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth(),
@@ -113,7 +114,7 @@ fun AddTransactionScreen(
             }
 
             // Account Selection
-            Text("Account", fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.account_label), fontWeight = FontWeight.Bold)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(accounts) { account ->
                     val isSelected = selectedAccountId == account.id
@@ -136,7 +137,7 @@ fun AddTransactionScreen(
             }
 
             // Category Selection
-            Text("Category", fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.category_label), fontWeight = FontWeight.Bold)
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 val chunkedCategories = filteredCategories.chunked(3)
                 chunkedCategories.forEach { rowCategories ->
@@ -214,7 +215,7 @@ fun AddTransactionScreen(
             OutlinedTextField(
                 value = formattedDate,
                 onValueChange = { },
-                label = { Text("Date") },
+                label = { Text(stringResource(R.string.date_label)) },
                 readOnly = true,
                 trailingIcon = { Icon(Icons.Default.DateRange, contentDescription = "Select Date") },
                 modifier = Modifier
@@ -244,7 +245,7 @@ fun AddTransactionScreen(
                     },
                     dismissButton = {
                         TextButton(onClick = { showDatePicker = false }) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.cancel_button))
                         }
                     }
                 ) {
@@ -256,7 +257,7 @@ fun AddTransactionScreen(
             OutlinedTextField(
                 value = note,
                 onValueChange = { note = it },
-                label = { Text("Note (Optional)") },
+                label = { Text(stringResource(R.string.note_label)) },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -297,7 +298,7 @@ fun AddTransactionScreen(
                 enabled = amount.isNotEmpty() && selectedCategoryId != null && selectedAccountId != null && !isSaving,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text("Save Transaction", fontSize = 18.sp, color = Color.Black)
+                Text(stringResource(R.string.save_transaction), fontSize = 18.sp, color = Color.Black)
             }
         }
     }
@@ -307,7 +308,7 @@ fun AddTransactionScreen(
         AlertDialog(
             onDismissRequest = { viewModel.dismissWarnings() },
             title = { Text("$bucketName Cap Warning") },
-            text = { Text("This transaction will put you ₱${String.format("%.2f", excess)} over your planned $bucketName allocation. Do you still want to save it?") },
+            text = { Text("This transaction will put you ₱${String.format(Locale.getDefault(), "%.2f", excess)} over your planned $bucketName allocation. Do you still want to save it?") },
             confirmButton = {
                 TextButton(onClick = {
                     val parsedAmount = amount.toDoubleOrNull() ?: 0.0
@@ -323,12 +324,12 @@ fun AddTransactionScreen(
                         onNavigateBack()
                     }
                 }) {
-                    Text("Yes, Save")
+                    Text(stringResource(R.string.yes_save))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissWarnings() }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel_button))
                 }
             }
         )
@@ -339,7 +340,7 @@ fun AddTransactionScreen(
         AlertDialog(
             onDismissRequest = { viewModel.dismissWarnings() },
             title = { Text("Over Budget Warning") },
-            text = { Text("This transaction will put you ₱${String.format("%.2f", excess)} over your budget for this category. Do you still want to save it?") },
+            text = { Text("This transaction will put you ₱${String.format(Locale.getDefault(), "%.2f", excess)} over your budget for this category. Do you still want to save it?") },
             confirmButton = {
                 TextButton(onClick = {
                     val parsedAmount = amount.toDoubleOrNull() ?: 0.0
@@ -355,12 +356,12 @@ fun AddTransactionScreen(
                         onNavigateBack()
                     }
                 }) {
-                    Text("Yes, Save")
+                    Text(stringResource(R.string.yes_save))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissWarnings() }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel_button))
                 }
             }
         )

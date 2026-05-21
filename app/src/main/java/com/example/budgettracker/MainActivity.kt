@@ -24,6 +24,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -127,8 +128,8 @@ fun BudgetApp(appContainer: AppContainer) {
                 val currentDestination = navBackStackEntry?.destination
                 
                 NavigationBarItem(
-                    icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
-                    label = { Text("Home") },
+                    icon = { Icon(Icons.Filled.Home, contentDescription = stringResource(R.string.tab_home)) },
+                    label = { Text(stringResource(R.string.tab_home)) },
                     selected = currentDestination?.hierarchy?.any { it.route == "home" } == true,
                     onClick = {
                         navController.navigate("home") {
@@ -139,8 +140,8 @@ fun BudgetApp(appContainer: AppContainer) {
                     }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Filled.List, contentDescription = "Transactions") },
-                    label = { Text("Transactions") },
+                    icon = { Icon(Icons.Filled.List, contentDescription = stringResource(R.string.tab_transactions)) },
+                    label = { Text(stringResource(R.string.tab_transactions)) },
                     selected = currentDestination?.hierarchy?.any { it.route == "transactions" } == true,
                     onClick = {
                         navController.navigate("transactions") {
@@ -151,8 +152,8 @@ fun BudgetApp(appContainer: AppContainer) {
                     }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Filled.PieChart, contentDescription = "Analytics") },
-                    label = { Text("Analytics") },
+                    icon = { Icon(Icons.Filled.PieChart, contentDescription = stringResource(R.string.tab_analytics)) },
+                    label = { Text(stringResource(R.string.tab_analytics)) },
                     selected = currentDestination?.hierarchy?.any { it.route == "analytics" } == true,
                     onClick = {
                         navController.navigate("analytics") {
@@ -163,8 +164,8 @@ fun BudgetApp(appContainer: AppContainer) {
                     }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Filled.Star, contentDescription = "Goals") },
-                    label = { Text("Goals") },
+                    icon = { Icon(Icons.Filled.Star, contentDescription = stringResource(R.string.tab_goals)) },
+                    label = { Text(stringResource(R.string.tab_goals)) },
                     selected = currentDestination?.hierarchy?.any { it.route == "goals" } == true,
                     onClick = {
                         navController.navigate("goals") {

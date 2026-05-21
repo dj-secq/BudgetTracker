@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import com.example.budgettracker.R
 import com.example.budgettracker.data.local.entity.SavingsGoal
 import com.example.budgettracker.ui.theme.EmeraldGreen
 import com.example.budgettracker.ui.utils.CurrencyUtils
@@ -51,7 +53,7 @@ fun GoalsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Savings Goals", fontWeight = FontWeight.Bold) }
+                title = { Text(stringResource(R.string.tab_goals), fontWeight = FontWeight.Bold) }
             )
         },
         modifier = modifier.fillMaxSize(),
@@ -248,8 +250,8 @@ fun GoalsScreen(
         goalToDelete?.let { goal ->
             AlertDialog(
                 onDismissRequest = { goalToDelete = null },
-                title = { Text("Confirm Deletion") },
-                text = { Text("Are you sure you want to delete the goal \"${goal.name}\"?") },
+                title = { Text(stringResource(R.string.confirm_deletion)) },
+                text = { Text(stringResource(R.string.delete_confirmation_msg)) },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -259,12 +261,12 @@ fun GoalsScreen(
                         },
                         colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                     ) {
-                        Text("Delete")
+                        Text(stringResource(R.string.delete_button))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { goalToDelete = null }) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.cancel_button))
                     }
                 }
             )

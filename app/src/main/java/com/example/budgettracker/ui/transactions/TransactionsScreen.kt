@@ -36,6 +36,8 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
+import com.example.budgettracker.R
 import com.example.budgettracker.ui.model.TransactionUiItem
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -74,7 +76,7 @@ fun TransactionsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Transactions", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.tab_transactions), fontWeight = FontWeight.Bold) },
                 actions = {
                     IconButton(onClick = { showFilterSheet = true }) {
                         Icon(
@@ -100,8 +102,8 @@ fun TransactionsScreen(
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
                         if (uiState.filterCategoryIds.isNotEmpty() || uiState.filterAccountId != null || uiState.startDate != null)
-                            "No transactions match your filters." 
-                        else "No transactions yet.", 
+                            stringResource(R.string.no_transactions_match)
+                        else stringResource(R.string.no_transactions), 
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -219,8 +221,8 @@ fun TransactionsScreen(
     transactionToDelete?.let { transaction ->
         AlertDialog(
             onDismissRequest = { transactionToDelete = null },
-            title = { Text("Confirm Deletion") },
-            text = { Text("Are you sure you want to delete this transaction?") },
+            title = { Text(stringResource(R.string.confirm_deletion)) },
+            text = { Text(stringResource(R.string.delete_confirmation_msg)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -230,12 +232,12 @@ fun TransactionsScreen(
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.delete_button))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { transactionToDelete = null }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel_button))
                 }
             }
         )
@@ -263,7 +265,7 @@ fun TransactionsScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Filters", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.filter_title), fontSize = 24.sp, fontWeight = FontWeight.Bold)
                     TextButton(onClick = { 
                         tempCategoryIds = emptySet()
                         tempAccountId = null
@@ -271,11 +273,11 @@ fun TransactionsScreen(
                         tempEndDate = null
                         viewModel.clearFilters()
                     }) {
-                        Text("Clear All")
+                        Text(stringResource(R.string.clear_all))
                     }
                 }
 
-                Text("Category", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.category_label), fontWeight = FontWeight.Bold)
                 androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     item {
                         FilterChip(
@@ -299,7 +301,7 @@ fun TransactionsScreen(
                     }
                 }
 
-                Text("Account", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.account_label), fontWeight = FontWeight.Bold)
                 androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     item {
                         FilterChip(
@@ -317,7 +319,7 @@ fun TransactionsScreen(
                     }
                 }
 
-                Text("Date Range", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.date_label), fontWeight = FontWeight.Bold)
                 
                 var showStartDatePicker by remember { mutableStateOf(false) }
                 var showEndDatePicker by remember { mutableStateOf(false) }
@@ -382,7 +384,7 @@ fun TransactionsScreen(
                     },
                     modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
                 ) {
-                    Text("Apply Filters")
+                    Text(stringResource(R.string.apply_filters))
                 }
             }
         }
