@@ -1,0 +1,40 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Realistic Wallet Icon - Scaled Down and Centered -->
+    <!-- Safe zone is 108x108. Target size is ~48-52dp -->
+
+    <!-- Main Wallet Rect (Back part) -->
+    <path
+        android:fillColor="#0D9488"
+        android:pathData="M30,38 C30,36.2 31.4,34.8 33.2,34.8 L74.8,34.8 C76.6,34.8 78,36.2 78,38 L78,68 C78,69.8 76.6,71.2 74.8,71.2 L33.2,71.2 C31.4,71.2 30,69.8 30,68 L30,38 Z" />
+
+    <!-- Top Slit (for money) -->
+    <path
+        android:fillColor="#064E3B"
+        android:pathData="M30,38 L78,38 L78,41 L30,41 Z" />
+
+    <!-- Wallet Strap/Clasp -->
+    <path
+        android:fillColor="#059669"
+        android:pathData="M56,44 C56,42.5 57.5,41.2 59.2,41.2 L78,41.2 L78,64.2 L59.2,64.2 C57.5,64.2 56,62.9 56,61.4 L56,44 Z" />
+
+    <!-- Metal Button -->
+    <path
+        android:fillColor="#FCD34D"
+        android:pathData="M62,52.7 A3,3 0 1,0 68,52.7 A3,3 0 1,0 62,52.7 Z" />
+
+    <!-- Card Slot Detail (Left) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.1"
+        android:pathData="M35,46 L50,46 L50,49 L35,49 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.1"
+        android:pathData="M35,53 L50,53 L50,56 L35,56 Z" />
+
+</vector>

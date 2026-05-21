@@ -1,0 +1,252 @@
+package com.example.budgettracker.ui.home
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import com.example.budgettracker.ui.components.BudgetProgressBar
+import com.example.budgettracker.ui.components.MonthPicker
+import com.example.budgettracker.data.local.entity.Account
+import com.example.budgettracker.data.local.entity.AccountType
+import com.example.budgettracker.ui.theme.CategoryColors
+import com.example.budgettracker.ui.theme.EmeraldGreen
+import com.example.budgettracker.ui.utils.CategoryIconHelper
+import com.example.budgettracker.ui.utils.CurrencyUtils
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreen(
+    viewModel: HomeViewModel,
+    onNavigateToAddTransaction: () -> Unit,
+    onNavigateToAssignBudget: () -> Unit,
+    onNavigateToSettings: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onNavigateToAddTransaction,
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = "Add Transaction")
+            }
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        modifier = modifier.fillMaxSize()
+    ) { _ ->
+        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp)
+                    .windowInsetsPadding(WindowInsets.statusBars),
+                contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp)
+            ) {
+                // Header: Settings and Centered Total Balance
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            IconButton(onClick = onNavigateToSettings) {
+                                Icon(
+                                    imageVector = Icons.Filled.Settings, 
+                                    contentDescription = "Settings",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                        
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            ),
+                            shape = RoundedCornerShape(24.dp),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 32.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "Total Balance",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = CurrencyUtils.formatAmount(uiState.totalBalance),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = 42.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Month Picker
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    MonthPicker(
+                        currentMonth = uiState.currentMonth,
+                        currentYear = uiState.currentYear,
+                        onMonthChanged = { m, y -> viewModel.setMonth(m, y) }
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+                
+                // Income and Expenses Row
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text("Monthly Income", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                            Text("+${CurrencyUtils.formatAmount(uiState.totalIncome)}", color = EmeraldGreen, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text("Monthly Expenses", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                            Text("-${CurrencyUtils.formatAmount(uiState.totalExpenses)}", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        }
+                    }
+                }
+                
+                // Wallets (Accounts)
+                if (uiState.accounts.isNotEmpty()) {
+                    item {
+                        Spacer(modifier = Modifier.height(24.dp))
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            items(uiState.accounts) { account ->
+                                AccountCard(account)
+                            }
+                        }
+                    }
+                }
+
+                // Budget Header with assign icon
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Budgets",
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        
+                        // Assign icon
+                        IconButton(onClick = onNavigateToAssignBudget) {
+                            Icon(
+                                imageVector = Icons.Filled.SwapHoriz,
+                                contentDescription = "Assign Budget",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                
+                // Budget items with category icons
+                items(uiState.budgetItems) { item ->
+                    val color = CategoryColors[(item.category.id % CategoryColors.size).toInt()]
+                    BudgetProgressBar(
+                        categoryName = item.category.name,
+                        spent = item.spent,
+                        limit = item.limit,
+                        baseColor = color,
+                        icon = CategoryIconHelper.getIconForCategory(item.category.name)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AccountCard(account: Account) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color(account.colorArgb)),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        modifier = Modifier.width(160.dp).height(100.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = account.name,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = when (account.type) {
+                        AccountType.CHECKING -> "✓"
+                        AccountType.SAVINGS -> "🏦"
+                        AccountType.CREDIT -> "💳"
+                    },
+                    fontSize = 14.sp
+                )
+            }
+            Text(
+                text = CurrencyUtils.formatAmount(account.balance),
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}

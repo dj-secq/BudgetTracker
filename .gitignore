@@ -1,0 +1,53 @@
+# Gradle files
+.gradle/
+build/
+
+# Android Studio / IntelliJ files
+*.iml
+.idea/
+!.idea/codeStyles/
+!.idea/inspectionProfiles/
+!.idea/copyright/
+!.idea/compiler.xml
+!.idea/misc.xml
+!.idea/vcs.xml
+!.idea/modules.xml
+!.idea/libraries/
+!.idea/dictionaries/
+!.idea/runConfigurations.xml
+!.idea/scopes/
+!.idea/workspace.xml
+!.idea/tasks.xml
+!.idea/shelf/
+!.idea/assetWizardSettings.xml
+*.iws
+
+# Local configuration file (SDK path, etc)
+local.properties
+
+# Log files
+*.log
+
+# Android Studio Captures
+captures/
+
+# Keystore files
+*.jks
+*.keystore
+
+# Google Services
+google-services.json
+
+# Built variants
+*.apk
+*.aar
+*.ap_
+*.aab
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# CMake / Native
+.externalNativeBuild/
+.cxx/
