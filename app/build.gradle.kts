@@ -69,4 +69,8 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.datastore:datastore-preferences:1.0.0")
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation("com.google.mlkit:text-recognition:16.0.1")
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.9.0")
 }

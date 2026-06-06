@@ -12,6 +12,8 @@ import com.example.budgettracker.data.local.entity.BudgetLimit
 import com.example.budgettracker.data.local.entity.Category
 import com.example.budgettracker.data.local.entity.SavingsGoal
 import com.example.budgettracker.data.local.entity.Transaction
+import com.example.budgettracker.data.local.entity.RecurringTransaction
+import com.example.budgettracker.data.local.dao.RecurringTransactionDao
 
 @Database(
     entities = [
@@ -19,9 +21,10 @@ import com.example.budgettracker.data.local.entity.Transaction
         Category::class,
         BudgetLimit::class,
         Transaction::class,
-        SavingsGoal::class
+        SavingsGoal::class,
+        RecurringTransaction::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -30,4 +33,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
     abstract fun savingsGoalDao(): SavingsGoalDao
     abstract fun accountDao(): AccountDao
+    abstract fun recurringTransactionDao(): RecurringTransactionDao
 }

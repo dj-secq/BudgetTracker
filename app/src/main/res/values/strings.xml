@@ -14,6 +14,7 @@
     <string name="budgets_header">Budgets</string>
 
     <!-- Transaction Screen -->
+    <string name="search_transactions">Search transactions...</string>
     <string name="no_transactions">No transactions yet.</string>
     <string name="no_transactions_match">No transactions match your filters.</string>
     <string name="filter_title">Filters</string>
@@ -27,6 +28,7 @@
     <string name="account_label">Account</string>
     <string name="date_label">Date</string>
     <string name="note_label">Note (Optional)</string>
+    <string name="repeat_transaction">Repeat this transaction</string>
     <string name="save_transaction">Save Transaction</string>
 
     <!-- Dialogs -->

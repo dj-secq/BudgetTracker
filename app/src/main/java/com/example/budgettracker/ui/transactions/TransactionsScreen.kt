@@ -33,6 +33,9 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -57,6 +60,7 @@ import java.util.Locale
 @Composable
 fun TransactionsScreen(
     viewModel: TransactionsViewModel,
+    onEditTransaction: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -118,6 +122,24 @@ fun TransactionsScreen(
                 contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                item {
+                    OutlinedTextField(
+                        value = uiState.searchQuery,
+                        onValueChange = { viewModel.updateSearchQuery(it) },
+                        placeholder = { Text(stringResource(R.string.search_transactions)) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp, top = 8.dp),
+                        singleLine = true,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            focusedContainerColor = MaterialTheme.colorScheme.surface
+                        )
+                    )
+                }
+                
                 groupedTransactions.forEach { (date, transactions) ->
                     item {
                         Text(
@@ -163,6 +185,7 @@ fun TransactionsScreen(
                             }
                         ) {
                             Card(
+                                onClick = { onEditTransaction(item.transaction.id) },
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                                 shape = RoundedCornerShape(16.dp),

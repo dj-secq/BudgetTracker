@@ -2,10 +2,14 @@ package com.example.budgettracker.ui.add
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+
+
 import com.example.budgettracker.data.local.entity.Account
 import com.example.budgettracker.data.local.entity.Category
 import com.example.budgettracker.data.local.entity.CategoryType
 import com.example.budgettracker.data.local.entity.ExpenseClassification
+import com.example.budgettracker.data.local.entity.Frequency
+import com.example.budgettracker.data.local.entity.RecurringTransaction
 import com.example.budgettracker.data.local.entity.Transaction
 import com.example.budgettracker.data.repository.BudgetRepository
 import com.example.budgettracker.data.repository.UserPreferencesRepository
@@ -16,6 +20,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.Calendar
+
 
 class AddTransactionViewModel(
     private val repository: BudgetRepository,
@@ -39,6 +44,8 @@ class AddTransactionViewModel(
         note: String,
         timestamp: Long,
         classification: ExpenseClassification,
+        isRecurring: Boolean = false,
+        recurringFrequency: Frequency? = null,
         onComplete: () -> Unit
     ) {
         viewModelScope.launch {
@@ -83,7 +90,7 @@ class AddTransactionViewModel(
                 }
             }
             
-            saveTransaction(accountId, categoryId, amount, note, timestamp, classification, onComplete)
+            saveTransaction(accountId, categoryId, amount, note, timestamp, classification, isRecurring, recurringFrequency, onComplete)
         }
     }
 
@@ -94,6 +101,8 @@ class AddTransactionViewModel(
         note: String,
         timestamp: Long = System.currentTimeMillis(),
         classification: ExpenseClassification = ExpenseClassification.NONE,
+        isRecurring: Boolean = false,
+        recurringFrequency: Frequency? = null,
         onComplete: () -> Unit
     ) {
         viewModelScope.launch {
@@ -107,6 +116,30 @@ class AddTransactionViewModel(
                 classification = classification
             )
             repository.insertTransaction(transaction)
+            
+            if (isRecurring && recurringFrequency != null) {
+                // Calculate next run time
+                val calendar = Calendar.getInstance().apply { timeInMillis = timestamp }
+                when (recurringFrequency) {
+                    Frequency.DAILY -> calendar.add(Calendar.DAY_OF_YEAR, 1)
+                    Frequency.WEEKLY -> calendar.add(Calendar.WEEK_OF_YEAR, 1)
+                    Frequency.MONTHLY -> calendar.add(Calendar.MONTH, 1)
+                    Frequency.YEARLY -> calendar.add(Calendar.YEAR, 1)
+                }
+                
+                val recurring = RecurringTransaction(
+                    accountId = accountId,
+                    categoryId = categoryId,
+                    amount = amount,
+                    note = note,
+                    classification = classification,
+                    frequency = recurringFrequency,
+                    startDate = timestamp,
+                    nextRunTime = calendar.timeInMillis
+                )
+                repository.insertRecurringTransaction(recurring)
+            }
+            
             isSaving.value = false
             onComplete()
         }

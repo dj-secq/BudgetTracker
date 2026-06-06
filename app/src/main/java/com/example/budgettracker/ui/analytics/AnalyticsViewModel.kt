@@ -2,6 +2,8 @@ package com.example.budgettracker.ui.analytics
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+
+
 import com.example.budgettracker.data.local.entity.Category
 import com.example.budgettracker.data.repository.BudgetRepository
 import com.example.budgettracker.data.repository.UserPreferencesRepository
@@ -41,6 +43,7 @@ data class AnalyticsUiState(
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
+
 class AnalyticsViewModel(
     private val repository: BudgetRepository,
     private val preferencesRepository: UserPreferencesRepository

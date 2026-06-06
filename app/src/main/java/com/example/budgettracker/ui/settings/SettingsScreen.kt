@@ -7,7 +7,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.*
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,6 +33,7 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onNavigateToWallets: () -> Unit,
     onNavigateToCategories: () -> Unit,
+    onNavigateToRecurring: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val budgetRule by viewModel.budgetRule.collectAsState()
@@ -36,6 +44,27 @@ fun SettingsScreen(
 
     val total = (needs + wants + savings).roundToInt()
     val isValid = total == 100
+
+    val context = LocalContext.current
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) {
+            viewModel.exportData(context, uri) { success ->
+                Toast.makeText(context, if (success) "Export successful!" else "Export failed", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            viewModel.importData(context, uri) { success ->
+                Toast.makeText(context, if (success) "Import successful!" else "Import failed", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -114,6 +143,54 @@ fun SettingsScreen(
                     Icon(Icons.Filled.Category, contentDescription = "Categories", tint = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(stringResource(R.string.manage_categories), fontWeight = FontWeight.Medium)
+                }
+            }
+
+            // Recurring Transactions Card
+            Card(
+                onClick = onNavigateToRecurring,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Filled.Repeat, contentDescription = "Recurring Transactions", tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text("Manage Recurring Transactions", fontWeight = FontWeight.Medium)
+                }
+            }
+
+            // Export Data Card
+            Card(
+                onClick = { exportLauncher.launch("BudgetTrackerBackup.json") },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Filled.Upload, contentDescription = "Export Data", tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text("Export Data (Backup)", fontWeight = FontWeight.Medium)
+                }
+            }
+
+            // Import Data Card
+            Card(
+                onClick = { importLauncher.launch(arrayOf("application/json", "*/*")) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Filled.Download, contentDescription = "Import Data", tint = MaterialTheme.colorScheme.error)
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text("Import Data (Restore)", fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.error)
+                        Text("Warning: Replaces all existing data", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                    }
                 }
             }
 

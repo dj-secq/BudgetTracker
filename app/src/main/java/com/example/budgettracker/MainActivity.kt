@@ -52,12 +52,17 @@ import com.example.budgettracker.ui.settings.SettingsScreen
 import com.example.budgettracker.ui.settings.SettingsViewModel
 import com.example.budgettracker.ui.settings.WalletManagementScreen
 import com.example.budgettracker.ui.settings.WalletManagementViewModel
+import com.example.budgettracker.ui.settings.RecurringTransactionsScreen
+import com.example.budgettracker.ui.settings.RecurringTransactionsViewModel
 import com.example.budgettracker.ui.theme.BudgetTrackerTheme
 import com.example.budgettracker.ui.transactions.TransactionsScreen
 import com.example.budgettracker.ui.transactions.TransactionsViewModel
 import com.example.budgettracker.ui.goals.GoalsScreen
 import com.example.budgettracker.ui.goals.GoalsViewModel
-
+import com.example.budgettracker.ui.edit.EditTransactionScreen
+import com.example.budgettracker.ui.edit.EditTransactionViewModel
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,7 +82,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun BudgetApp(appContainer: AppContainer) {
+fun BudgetApp(appContainer: com.example.budgettracker.di.AppContainer) {
     val navController = rememberNavController()
     
     // Provide ViewModel factory
@@ -90,6 +95,9 @@ fun BudgetApp(appContainer: AppContainer) {
                 }
                 if (modelClass.isAssignableFrom(AddTransactionViewModel::class.java)) {
                     return AddTransactionViewModel(appContainer.budgetRepository, appContainer.userPreferencesRepository) as T
+                }
+                if (modelClass.isAssignableFrom(EditTransactionViewModel::class.java)) {
+                    return EditTransactionViewModel(appContainer.budgetRepository, appContainer.userPreferencesRepository) as T
                 }
                 if (modelClass.isAssignableFrom(AnalyticsViewModel::class.java)) {
                     return AnalyticsViewModel(appContainer.budgetRepository, appContainer.userPreferencesRepository) as T
@@ -104,7 +112,7 @@ fun BudgetApp(appContainer: AppContainer) {
                     return GoalsViewModel(appContainer.budgetRepository) as T
                 }
                 if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
-                    return SettingsViewModel(appContainer.userPreferencesRepository) as T
+                    return SettingsViewModel(appContainer.userPreferencesRepository, appContainer.budgetRepository) as T
                 }
                 if (modelClass.isAssignableFrom(WalletManagementViewModel::class.java)) {
                     return WalletManagementViewModel(appContainer.budgetRepository) as T
@@ -112,10 +120,14 @@ fun BudgetApp(appContainer: AppContainer) {
                 if (modelClass.isAssignableFrom(CategoryManagementViewModel::class.java)) {
                     return CategoryManagementViewModel(appContainer.budgetRepository) as T
                 }
+                if (modelClass.isAssignableFrom(RecurringTransactionsViewModel::class.java)) {
+                    return RecurringTransactionsViewModel(appContainer.budgetRepository) as T
+                }
                 throw IllegalArgumentException("Unknown ViewModel class")
             }
         }
     }
+    
 
     val routeOrder = listOf("home", "transactions", "analytics", "goals")
     fun getRouteIndex(route: String?) = routeOrder.indexOf(route).let { if (it == -1) 0 else it }
@@ -203,9 +215,8 @@ fun BudgetApp(appContainer: AppContainer) {
             }
         ) {
             composable("home") {
-                val homeViewModel: HomeViewModel = viewModel(factory = factory)
                 HomeScreen(
-                    viewModel = homeViewModel,
+                    viewModel = viewModel(factory = factory),
                     onNavigateToAddTransaction = { navController.navigate("add_transaction") },
                     onNavigateToAssignBudget = { navController.navigate("assign_budget") },
                     onNavigateToSettings = { navController.navigate("settings") }
@@ -213,7 +224,10 @@ fun BudgetApp(appContainer: AppContainer) {
             }
             composable("transactions") {
                 val transactionsViewModel: TransactionsViewModel = viewModel(factory = factory)
-                TransactionsScreen(viewModel = transactionsViewModel)
+                TransactionsScreen(
+                    viewModel = transactionsViewModel,
+                    onEditTransaction = { id -> navController.navigate("edit_transaction/$id") }
+                )
             }
             composable("analytics") {
                 val analyticsViewModel: AnalyticsViewModel = viewModel(factory = factory)
@@ -223,6 +237,18 @@ fun BudgetApp(appContainer: AppContainer) {
                 val addTransactionViewModel: AddTransactionViewModel = viewModel(factory = factory)
                 AddTransactionScreen(
                     viewModel = addTransactionViewModel,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable(
+                route = "edit_transaction/{transactionId}",
+                arguments = listOf(navArgument("transactionId") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val transactionId = backStackEntry.arguments?.getLong("transactionId") ?: return@composable
+                val editTransactionViewModel: EditTransactionViewModel = viewModel(factory = factory)
+                EditTransactionScreen(
+                    transactionId = transactionId,
+                    viewModel = editTransactionViewModel,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
@@ -243,7 +269,8 @@ fun BudgetApp(appContainer: AppContainer) {
                     viewModel = settingsViewModel,
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToWallets = { navController.navigate("wallet_management") },
-                    onNavigateToCategories = { navController.navigate("category_management") }
+                    onNavigateToCategories = { navController.navigate("category_management") },
+                    onNavigateToRecurring = { navController.navigate("recurring_transactions") }
                 )
             }
             composable("wallet_management") {
@@ -257,6 +284,13 @@ fun BudgetApp(appContainer: AppContainer) {
                 val categoryViewModel: CategoryManagementViewModel = viewModel(factory = factory)
                 CategoryManagementScreen(
                     viewModel = categoryViewModel,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable("recurring_transactions") {
+                val recurringViewModel: RecurringTransactionsViewModel = viewModel(factory = factory)
+                RecurringTransactionsScreen(
+                    viewModel = recurringViewModel,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }

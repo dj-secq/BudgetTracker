@@ -1,4 +1,4 @@
-package com.example.budgettracker.ui.add
+package com.example.budgettracker.ui.edit
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,18 +23,10 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.ui.res.stringResource
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.compose.ui.platform.LocalContext
-import android.widget.Toast
-import kotlinx.coroutines.launch
 import com.example.budgettracker.R
 import com.example.budgettracker.data.local.entity.CategoryType
 import com.example.budgettracker.data.local.entity.ExpenseClassification
-import com.example.budgettracker.data.local.entity.Frequency
 import com.example.budgettracker.ui.theme.CategoryColors
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -42,13 +34,17 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddTransactionScreen(
-    viewModel: AddTransactionViewModel,
+fun EditTransactionScreen(
+    transactionId: Long,
+    viewModel: EditTransactionViewModel,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val categories by viewModel.categories.collectAsState()
+    val accounts by viewModel.accounts.collectAsState()
     val isSaving by viewModel.isSaving.collectAsState()
+    val transaction by viewModel.transactionFlow.collectAsState()
+    
     val haptic = LocalHapticFeedback.current
 
     var amount by remember { mutableStateOf("") }
@@ -57,54 +53,45 @@ fun AddTransactionScreen(
     var transactionType by remember { mutableStateOf(CategoryType.EXPENSE) }
     var selectedClassification by remember { mutableStateOf(ExpenseClassification.NONE) }
     
-    var isRecurring by remember { mutableStateOf(false) }
-    var recurringFrequency by remember { mutableStateOf(Frequency.MONTHLY) }
-    
     var selectedDateMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDateMillis)
     
-    val accounts by viewModel.accounts.collectAsState()
     var selectedAccountId by remember { mutableStateOf<Long?>(null) }
     
     val overBudgetWarning by viewModel.showOverBudgetWarning.collectAsState()
     val bucketWarning by viewModel.showBucketWarning.collectAsState()
+
+    var isInitialized by remember { mutableStateOf(false) }
+
+    LaunchedEffect(transactionId) {
+        viewModel.loadTransaction(transactionId)
+    }
+
+    LaunchedEffect(transaction, categories) {
+        if (!isInitialized && transaction != null && categories.isNotEmpty()) {
+            val tx = transaction!!
+            amount = if (tx.amount % 1.0 == 0.0) tx.amount.toLong().toString() else tx.amount.toString()
+            note = tx.note
+            selectedCategoryId = tx.categoryId
+            selectedAccountId = tx.accountId
+            selectedDateMillis = tx.timestamp
+            selectedClassification = tx.classification
+            
+            val cat = categories.find { it.id == tx.categoryId }
+            if (cat != null) {
+                transactionType = cat.type
+            }
+            isInitialized = true
+        }
+    }
     
     val filteredCategories = categories.filter { it.type == transactionType }
-
-    val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-    val scannerHelper = remember { ReceiptScannerHelper(context) }
-    var isScanning by remember { mutableStateOf(false) }
-
-    val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri ->
-            if (uri != null) {
-                isScanning = true
-                coroutineScope.launch {
-                    val result = scannerHelper.scanReceipt(uri)
-                    if (result != null) {
-                        if (result.amount != null) {
-                            amount = result.amount.toString()
-                        }
-                        if (result.note.isNotBlank()) {
-                            note = result.note
-                        }
-                        Toast.makeText(context, "Scanned successfully", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(context, "Failed to scan receipt", Toast.LENGTH_SHORT).show()
-                    }
-                    isScanning = false
-                }
-            }
-        }
-    )
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.add_transaction_title)) },
+                title = { Text("Edit Transaction") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -117,6 +104,13 @@ fun AddTransactionScreen(
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
+        if (!isInitialized) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+            return@Scaffold
+        }
+
         Column(
             modifier = modifier
                 .fillMaxSize()
@@ -131,19 +125,6 @@ fun AddTransactionScreen(
                 onValueChange = { if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d*$"))) amount = it },
                 label = { Text(stringResource(R.string.amount_label)) },
                 prefix = { Text("₱") },
-                trailingIcon = {
-                    IconButton(onClick = {
-                        photoPickerLauncher.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                        )
-                    }) {
-                        if (isScanning) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                        } else {
-                            Icon(Icons.Filled.CameraAlt, contentDescription = "Scan Receipt", tint = MaterialTheme.colorScheme.primary)
-                        }
-                    }
-                },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth(),
                 textStyle = LocalTextStyle.current.copy(fontSize = 32.sp, fontWeight = FontWeight.Bold)
@@ -233,7 +214,6 @@ fun AddTransactionScreen(
                                 }
                             }
                         }
-                        // Fill empty spots if row is not full
                         repeat(3 - rowCategories.size) {
                             Spacer(modifier = Modifier.weight(1f))
                         }
@@ -314,29 +294,6 @@ fun AddTransactionScreen(
                 modifier = Modifier.fillMaxWidth()
             )
             
-            // Recurring Transaction Toggle
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(stringResource(R.string.repeat_transaction), fontWeight = FontWeight.Bold)
-                Switch(checked = isRecurring, onCheckedChange = { isRecurring = it })
-            }
-            
-            if (isRecurring) {
-                Text("Frequency", fontWeight = FontWeight.Bold)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(Frequency.values()) { freq ->
-                        FilterChip(
-                            selected = recurringFrequency == freq,
-                            onClick = { recurringFrequency = freq },
-                            label = { Text(freq.name) }
-                        )
-                    }
-                }
-            }
-
             Spacer(modifier = Modifier.weight(1f))
 
             // Save Button
@@ -347,27 +304,24 @@ fun AddTransactionScreen(
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         if (transactionType == CategoryType.EXPENSE) {
                             viewModel.onConfirmSave(
-                                selectedAccountId!!,
-                                selectedCategoryId!!,
-                                parsedAmount,
-                                note,
-                                selectedDateMillis,
-                                selectedClassification,
-                                isRecurring,
-                                if (isRecurring) recurringFrequency else null
+                                transactionId = transactionId,
+                                accountId = selectedAccountId!!,
+                                categoryId = selectedCategoryId!!,
+                                amount = parsedAmount,
+                                note = note,
+                                timestamp = selectedDateMillis,
+                                classification = selectedClassification
                             ) {
                                 onNavigateBack()
                             }
                         } else {
-                            viewModel.saveTransaction(
-                                selectedAccountId!!,
-                                selectedCategoryId!!,
-                                parsedAmount,
-                                note,
-                                selectedDateMillis,
-                                ExpenseClassification.NONE,
-                                isRecurring,
-                                if (isRecurring) recurringFrequency else null
+                            viewModel.saveTransactionWithoutLimits(
+                                transactionId = transactionId,
+                                accountId = selectedAccountId!!,
+                                categoryId = selectedCategoryId!!,
+                                amount = parsedAmount,
+                                note = note,
+                                timestamp = selectedDateMillis
                             ) {
                                 onNavigateBack()
                             }
@@ -383,12 +337,12 @@ fun AddTransactionScreen(
         }
     }
 
-    // Bucket warning dialog (Strict)
+    // Bucket warning dialog
     bucketWarning?.let { (bucketName, excess) ->
         AlertDialog(
             onDismissRequest = { viewModel.dismissWarnings() },
             title = { Text("$bucketName Cap Reached") },
-            text = { Text("This transaction exceeds your $bucketName allocation by ₱${String.format(Locale.getDefault(), "%.2f", excess)}.\n\nStrict limits are enforced. Please adjust the amount or increase your income first.") },
+            text = { Text("This edit exceeds your $bucketName allocation by ₱${String.format(Locale.getDefault(), "%.2f", excess)}.\n\nPlease adjust the amount or increase your income.") },
             confirmButton = {
                 TextButton(onClick = { viewModel.dismissWarnings() }) {
                     Text("OK")
@@ -397,25 +351,17 @@ fun AddTransactionScreen(
         )
     }
 
-    // Over budget warning dialog (Strict)
+    // Over budget warning dialog
     overBudgetWarning?.let { excess ->
         AlertDialog(
             onDismissRequest = { viewModel.dismissWarnings() },
             title = { Text("Over Budget") },
-            text = { Text("This transaction exceeds your budget for this category by ₱${String.format(Locale.getDefault(), "%.2f", excess)}.\n\nStrict budget limits are enforced. You cannot save this transaction.") },
+            text = { Text("This edit exceeds your budget for this category by ₱${String.format(Locale.getDefault(), "%.2f", excess)}.\n\nYou cannot save this transaction.") },
             confirmButton = {
                 TextButton(onClick = { viewModel.dismissWarnings() }) {
                     Text("OK")
                 }
             }
         )
-    }
-
-    // Handle back navigation on success (when not using manual callback)
-    LaunchedEffect(isSaving) {
-        if (!isSaving && overBudgetWarning == null && amount.isEmpty() && selectedCategoryId == null) {
-            // This is a bit tricky since we don't have a clear "success" state other than the callback
-            // For now, the onConfirmSave and saveTransaction with callback should handle it.
-        }
     }
 }

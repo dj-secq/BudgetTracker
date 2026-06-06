@@ -29,11 +29,13 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
 
     override val budgetRepository: BudgetRepository by lazy {
         BudgetRepository(
+            database = database,
             accountDao = database.accountDao(),
             categoryDao = database.categoryDao(),
             budgetLimitDao = database.budgetLimitDao(),
             transactionDao = database.transactionDao(),
-            savingsGoalDao = database.savingsGoalDao()
+            savingsGoalDao = database.savingsGoalDao(),
+            recurringTransactionDao = database.recurringTransactionDao()
         )
     }
 

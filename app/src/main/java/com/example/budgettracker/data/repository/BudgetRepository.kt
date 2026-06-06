@@ -3,12 +3,17 @@ package com.example.budgettracker.data.repository
 import com.example.budgettracker.data.local.dao.AccountDao
 import com.example.budgettracker.data.local.dao.BudgetLimitDao
 import com.example.budgettracker.data.local.dao.CategoryDao
+import com.example.budgettracker.data.local.dao.RecurringTransactionDao
 import com.example.budgettracker.data.local.dao.SavingsGoalDao
 import com.example.budgettracker.data.local.dao.TransactionDao
+import com.example.budgettracker.data.local.AppDatabase
 import com.example.budgettracker.data.local.entity.Account
+import com.example.budgettracker.data.local.entity.BackupData
 import com.example.budgettracker.data.local.entity.BudgetLimit
 import com.example.budgettracker.data.local.entity.Category
 import com.example.budgettracker.data.local.entity.CategoryType
+import androidx.room.withTransaction
+import com.example.budgettracker.data.local.entity.RecurringTransaction
 import com.example.budgettracker.data.local.entity.SavingsGoal
 import com.example.budgettracker.data.local.entity.Transaction
 import kotlinx.coroutines.flow.Flow
@@ -16,11 +21,13 @@ import kotlinx.coroutines.flow.first
 import java.util.Calendar
 
 class BudgetRepository(
+    private val database: AppDatabase,
     private val accountDao: AccountDao,
     private val categoryDao: CategoryDao,
     private val budgetLimitDao: BudgetLimitDao,
     private val transactionDao: TransactionDao,
-    private val savingsGoalDao: SavingsGoalDao
+    private val savingsGoalDao: SavingsGoalDao,
+    private val recurringTransactionDao: RecurringTransactionDao
 ) {
     // Accounts
     fun getAllAccounts(): Flow<List<Account>> = accountDao.getAllAccounts()
@@ -58,6 +65,8 @@ class BudgetRepository(
 
     // Transactions
     fun getRecentTransactions(): Flow<List<Transaction>> = transactionDao.getAllTransactions()
+    
+    suspend fun getTransactionById(id: Long): Transaction? = transactionDao.getTransactionById(id)
     
     fun getTransactionsForMonth(month: Int, year: Int): Flow<List<Transaction>> {
         val calendar = Calendar.getInstance().apply {
@@ -128,9 +137,76 @@ class BudgetRepository(
         transactionDao.deleteTransaction(transaction)
     }
     
+    suspend fun updateTransaction(newTransaction: Transaction) {
+        database.withTransaction {
+            val oldTransaction = transactionDao.getTransactionById(newTransaction.id)
+            if (oldTransaction != null) {
+                // Reverse the old transaction
+                val oldCategory = categoryDao.getCategoryById(oldTransaction.categoryId)
+                val oldAccount = accountDao.getAccountById(oldTransaction.accountId)
+                if (oldCategory != null && oldAccount != null) {
+                    val reversedBalance = if (oldCategory.type == CategoryType.INCOME) {
+                        oldAccount.balance - oldTransaction.amount
+                    } else {
+                        oldAccount.balance + oldTransaction.amount
+                    }
+                    accountDao.updateAccount(oldAccount.copy(balance = reversedBalance))
+                }
+
+                // Apply the new transaction
+                val newCategory = categoryDao.getCategoryById(newTransaction.categoryId)
+                // Refetch the account because it might have been updated by the reversal!
+                val newAccount = accountDao.getAccountById(newTransaction.accountId)
+                if (newCategory != null && newAccount != null) {
+                    val updatedBalance = if (newCategory.type == CategoryType.INCOME) {
+                        newAccount.balance + newTransaction.amount
+                    } else {
+                        newAccount.balance - newTransaction.amount
+                    }
+                    accountDao.updateAccount(newAccount.copy(balance = updatedBalance))
+                }
+                
+                transactionDao.updateTransaction(newTransaction)
+            }
+        }
+    }
+    
     // Savings Goals
     fun getAllGoals(): Flow<List<SavingsGoal>> = savingsGoalDao.getAllGoals()
     suspend fun insertGoal(goal: SavingsGoal): Long = savingsGoalDao.insertGoal(goal)
     suspend fun updateGoal(goal: SavingsGoal) = savingsGoalDao.updateGoal(goal)
     suspend fun deleteGoal(goal: SavingsGoal) = savingsGoalDao.deleteGoal(goal)
+
+    // Recurring Transactions
+    fun getAllRecurringTransactions(): Flow<List<RecurringTransaction>> = recurringTransactionDao.getAllRecurringTransactions()
+    suspend fun getDueRecurringTransactions(currentTime: Long): List<RecurringTransaction> = recurringTransactionDao.getDueRecurringTransactions(currentTime)
+    suspend fun insertRecurringTransaction(recurringTransaction: RecurringTransaction): Long = recurringTransactionDao.insertRecurringTransaction(recurringTransaction)
+    suspend fun updateRecurringTransaction(recurringTransaction: RecurringTransaction) = recurringTransactionDao.updateRecurringTransaction(recurringTransaction)
+    suspend fun deleteRecurringTransaction(recurringTransaction: RecurringTransaction) = recurringTransactionDao.deleteRecurringTransaction(recurringTransaction)
+
+    // Export & Import
+    suspend fun exportData(): BackupData {
+        return BackupData(
+            accounts = accountDao.getAllAccounts().first(),
+            categories = categoryDao.getAllCategories().first(),
+            transactions = transactionDao.getAllTransactions().first(),
+            budgetLimits = budgetLimitDao.getAllBudgetLimits().first(),
+            savingsGoals = savingsGoalDao.getAllGoals().first(),
+            recurringTransactions = recurringTransactionDao.getAllRecurringTransactions().first()
+        )
+    }
+
+    suspend fun restoreBackup(backupData: BackupData) {
+        database.withTransaction {
+            database.clearAllTables()
+            
+            // Insert in order of dependencies
+            for (account in backupData.accounts) accountDao.insertAccount(account)
+            for (category in backupData.categories) categoryDao.insertCategory(category)
+            for (limit in backupData.budgetLimits) budgetLimitDao.insertBudgetLimit(limit)
+            for (goal in backupData.savingsGoals) savingsGoalDao.insertGoal(goal)
+            for (transaction in backupData.transactions) transactionDao.insertTransaction(transaction)
+            for (recurring in backupData.recurringTransactions) recurringTransactionDao.insertRecurringTransaction(recurring)
+        }
+    }
 }

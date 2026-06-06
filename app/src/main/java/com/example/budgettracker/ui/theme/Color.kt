@@ -2,9 +2,9 @@ package com.example.budgettracker.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val BackgroundDark = Color(0xFF111827)
-val SurfaceDark = Color(0xFF1F2937)
-val SurfaceVariantDark = Color(0xFF374151)
+val BackgroundDark = Color(0xFF000000) // True black for OLED
+val SurfaceDark = Color(0xFF121212)
+val SurfaceVariantDark = Color(0xFF1E1E1E)
 val TextPrimaryDark = Color(0xFFF9FAFB)
 val TextSecondaryDark = Color(0xFF9CA3AF)
 
