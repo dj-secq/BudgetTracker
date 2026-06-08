@@ -95,142 +95,136 @@ fun TransactionsScreen(
         modifier = modifier.fillMaxSize(),
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
-        if (uiState.transactions.isEmpty()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = innerPadding.calculateTopPadding())
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(horizontal = 24.dp)
-            ) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = innerPadding.calculateTopPadding())
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 24.dp)
+        ) {
+            OutlinedTextField(
+                value = uiState.searchQuery,
+                onValueChange = { viewModel.updateSearchQuery(it) },
+                placeholder = { Text(stringResource(R.string.search_transactions)) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp, top = 8.dp),
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color.Transparent,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    focusedContainerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+
+            if (uiState.transactions.isEmpty()) {
+                Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Text(
-                        if (uiState.filterCategoryIds.isNotEmpty() || uiState.filterAccountId != null || uiState.startDate != null)
+                        if (uiState.searchQuery.isNotEmpty() || uiState.filterCategoryIds.isNotEmpty() || uiState.filterAccountId != null || uiState.startDate != null)
                             stringResource(R.string.no_transactions_match)
                         else stringResource(R.string.no_transactions), 
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = innerPadding.calculateTopPadding())
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(horizontal = 24.dp),
-                contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item {
-                    OutlinedTextField(
-                        value = uiState.searchQuery,
-                        onValueChange = { viewModel.updateSearchQuery(it) },
-                        placeholder = { Text(stringResource(R.string.search_transactions)) },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp, top = 8.dp),
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedBorderColor = Color.Transparent,
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                            focusedContainerColor = MaterialTheme.colorScheme.surface
-                        )
-                    )
-                }
-                
-                groupedTransactions.forEach { (date, transactions) ->
-                    item {
-                        Text(
-                            text = date,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
-                        )
-                    }
-                    items(transactions, key = { it.transaction.id }) { item ->
-                        val dismissState = rememberSwipeToDismissBoxState(
-                            confirmValueChange = {
-                                if (it == SwipeToDismissBoxValue.EndToStart) {
-                                    transactionToDelete = item.transaction
-                                    false
-                                } else {
-                                    false
-                                }
-                            }
-                        )
-                        
-                        SwipeToDismissBox(
-                            state = dismissState,
-                            enableDismissFromStartToEnd = false,
-                            backgroundContent = {
-                                val color = if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) MaterialTheme.colorScheme.error else Color.Transparent
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(color, RoundedCornerShape(16.dp))
-                                        .padding(horizontal = 20.dp),
-                                    contentAlignment = Alignment.CenterEnd
-                                ) {
-                                    if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) {
-                                        Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = "Delete Transaction",
-                                            tint = Color.White
-                                        )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    groupedTransactions.forEach { (date, transactions) ->
+                        item {
+                            Text(
+                                text = date,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                            )
+                        }
+                        items(transactions, key = { it.transaction.id }) { item ->
+                            val dismissState = rememberSwipeToDismissBoxState(
+                                confirmValueChange = {
+                                    if (it == SwipeToDismissBoxValue.EndToStart) {
+                                        transactionToDelete = item.transaction
+                                        false
+                                    } else {
+                                        false
                                     }
                                 }
-                            }
-                        ) {
-                            Card(
-                                onClick = { onEditTransaction(item.transaction.id) },
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(16.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = CategoryIconHelper.getIconForCategory(item.categoryName),
-                                        contentDescription = item.categoryName,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(16.dp))
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = item.transaction.note.ifEmpty { item.categoryName }, 
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(
-                                                text = item.categoryName,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                fontSize = 12.sp
+                            )
+                            
+                            SwipeToDismissBox(
+                                state = dismissState,
+                                enableDismissFromStartToEnd = false,
+                                backgroundContent = {
+                                    val color = if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) MaterialTheme.colorScheme.error else Color.Transparent
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(color, RoundedCornerShape(16.dp))
+                                            .padding(horizontal = 20.dp),
+                                        contentAlignment = Alignment.CenterEnd
+                                    ) {
+                                        if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Delete Transaction",
+                                                tint = Color.White
                                             )
-                                            if (item.transaction.classification != com.example.budgettracker.data.local.entity.ExpenseClassification.NONE) {
-                                                Text(
-                                                    text = " • ${item.transaction.classification.name}",
-                                                    color = MaterialTheme.colorScheme.primary,
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            }
                                         }
                                     }
-                                    val isIncome = item.categoryType == com.example.budgettracker.data.local.entity.CategoryType.INCOME
-                                    Text(
-                                        text = "${if(isIncome) "+" else "-"}${com.example.budgettracker.ui.utils.CurrencyUtils.formatAmount(Math.abs(item.transaction.amount))}", 
-                                        color = if (isIncome) com.example.budgettracker.ui.theme.EmeraldGreen else MaterialTheme.colorScheme.onSurface, 
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                }
+                            ) {
+                                Card(
+                                    onClick = { onEditTransaction(item.transaction.id) },
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(16.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = CategoryIconHelper.getIconForCategory(item.categoryName),
+                                            contentDescription = item.categoryName,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(16.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = item.transaction.note.ifEmpty { item.categoryName }, 
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    text = item.categoryName,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    fontSize = 12.sp
+                                                )
+                                                if (item.transaction.classification != com.example.budgettracker.data.local.entity.ExpenseClassification.NONE) {
+                                                    Text(
+                                                        text = " • ${item.transaction.classification.name}",
+                                                        color = MaterialTheme.colorScheme.primary,
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        val isIncome = item.categoryType == com.example.budgettracker.data.local.entity.CategoryType.INCOME
+                                        Text(
+                                            text = "${if(isIncome) "+" else "-"}${com.example.budgettracker.ui.utils.CurrencyUtils.formatAmount(Math.abs(item.transaction.amount))}", 
+                                            color = if (isIncome) com.example.budgettracker.ui.theme.EmeraldGreen else MaterialTheme.colorScheme.onSurface, 
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
                                 }
                             }
                         }

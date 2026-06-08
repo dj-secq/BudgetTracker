@@ -18,12 +18,23 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.example.budgettracker.R
 import com.example.budgettracker.ui.components.BarChartData
 import com.example.budgettracker.ui.components.HorizontalBarChart
@@ -41,6 +52,8 @@ fun AnalyticsScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    var selectedCategoryType by remember { mutableIntStateOf(0) } // 0 = Expense, 1 = Income
 
     Scaffold(
         topBar = {
@@ -63,7 +76,54 @@ fun AnalyticsScreen(
                 currentYear = uiState.currentYear,
                 onMonthChanged = { m, y -> viewModel.setMonth(m, y) }
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // High-Level Financial Overview
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Column {
+                            Text("Income", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(CurrencyUtils.formatAmount(uiState.totalIncome), fontWeight = FontWeight.Bold, color = EmeraldGreen)
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text("Expenses", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(CurrencyUtils.formatAmount(uiState.totalExpenses), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    val netBalance = uiState.totalIncome - uiState.totalExpenses
+                    val netColor = if (netBalance >= 0) EmeraldGreen else MaterialTheme.colorScheme.error
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text("Net Balance", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                        Text(
+                            text = "${if (netBalance >= 0) "+" else "-"}${CurrencyUtils.formatAmount(Math.abs(netBalance))}",
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 18.sp,
+                            color = netColor
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    val expenseRatio = if (uiState.totalIncome > 0) (uiState.totalExpenses / uiState.totalIncome).toFloat().coerceIn(0f, 1f) else if (uiState.totalExpenses > 0) 1f else 0f
+                    LinearProgressIndicator(
+                        progress = { expenseRatio },
+                        modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                        color = if (expenseRatio > 0.9f) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             if (uiState.totalExpenses == 0.0 && uiState.totalIncome == 0.0) {
                 // Empty state
@@ -92,126 +152,187 @@ fun AnalyticsScreen(
                     )
                 }
             } else {
+                TabRow(
+                    selectedTabIndex = selectedTabIndex,
+                    containerColor = MaterialTheme.colorScheme.background
+                ) {
+                    Tab(
+                        selected = selectedTabIndex == 0,
+                        onClick = { selectedTabIndex = 0 },
+                        text = { Text("Budget Rule") }
+                    )
+                    Tab(
+                        selected = selectedTabIndex == 1,
+                        onClick = { selectedTabIndex = 1 },
+                        text = { Text("Categories") }
+                    )
+                }
+                
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Dashboard Cards
-                    items(uiState.bucketStats) { stat ->
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(text = stat.name, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text("Goal: ${CurrencyUtils.formatAmount(stat.goal)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text("Actual: ${CurrencyUtils.formatAmount(stat.actual)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                Spacer(modifier = Modifier.height(4.dp))
-                                val isUnderBudget = stat.net >= 0
-                                Text(
-                                    text = "Net: ${if (isUnderBudget) "+" else "-"}${CurrencyUtils.formatAmount(Math.abs(stat.net))}",
-                                    color = if (isUnderBudget) EmeraldGreen else MaterialTheme.colorScheme.error,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-                    
-                    // Pie Chart for spending breakdown
-                    if (uiState.categorySpending.isNotEmpty()) {
-                        item {
-                            Spacer(modifier = Modifier.height(20.dp))
-                            Text(
-                                text = "Spending Breakdown",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
-                            val pieData = uiState.categorySpending.sortedByDescending { it.totalSpent }.map { item ->
-                                val color = CategoryColors[(item.category.id % CategoryColors.size).toInt()]
-                                PieChartData(
-                                    label = item.category.name,
-                                    value = item.totalSpent,
-                                    color = color
-                                )
-                            }
-                            
-                            PieChart(
-                                data = pieData,
-                                modifier = Modifier
-                                    .fillMaxWidth(0.6f)
-                                    .padding(vertical = 8.dp)
-                            )
-                            
-                            // Legend
-                            Spacer(modifier = Modifier.height(8.dp))
-                            pieData.forEach { item ->
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(vertical = 2.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(12.dp)
-                                            .padding(end = 0.dp)
-                                    ) {
-                                        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
-                                            drawCircle(color = item.color)
-                                        }
+                    if (selectedTabIndex == 0) {
+                        // Dashboard Cards
+                        items(uiState.bucketStats) { stat ->
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Text(text = stat.name, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text("Goal: ${CurrencyUtils.formatAmount(stat.goal)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text("Actual: ${CurrencyUtils.formatAmount(stat.actual)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = item.label,
-                                        fontSize = 14.sp,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.weight(1f)
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    
+                                    val progressRatio = if (stat.goal > 0) (stat.actual / stat.goal).toFloat().coerceIn(0f, 1f) else if (stat.actual > 0) 1f else 0f
+                                    val isUnderBudget = stat.net >= 0
+                                    
+                                    LinearProgressIndicator(
+                                        progress = { progressRatio },
+                                        modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                                        color = if (isUnderBudget) EmeraldGreen else MaterialTheme.colorScheme.error,
+                                        trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
                                     )
+                                    
+                                    Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = CurrencyUtils.formatAmount(item.value),
-                                        fontSize = 14.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        text = "Net: ${if (isUnderBudget) "+" else "-"}${CurrencyUtils.formatAmount(Math.abs(stat.net))}",
+                                        color = if (isUnderBudget) EmeraldGreen else MaterialTheme.colorScheme.error,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp
                                     )
                                 }
                             }
+                            Spacer(modifier = Modifier.height(12.dp))
                         }
-                    }
-                    
-                    item {
-                        Spacer(modifier = Modifier.height(32.dp))
-                        Text(
-                            text = "Spending by Category",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
+                    } else {
+                        // Categories Tab
+                        item {
+                            SingleChoiceSegmentedButtonRow(
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                            ) {
+                                SegmentedButton(
+                                    selected = selectedCategoryType == 0,
+                                    onClick = { selectedCategoryType = 0 },
+                                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                                ) {
+                                    Text("Expenses")
+                                }
+                                SegmentedButton(
+                                    selected = selectedCategoryType == 1,
+                                    onClick = { selectedCategoryType = 1 },
+                                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                                ) {
+                                    Text("Income")
+                                }
+                            }
+                        }
 
-                        if (uiState.categorySpending.isEmpty()) {
-                            Text("No spending data this month.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        } else {
-                            val barData = uiState.categorySpending.sortedByDescending { it.totalSpent }.map { item ->
-                                val color = CategoryColors[(item.category.id % CategoryColors.size).toInt()]
-                                val percentage = if (uiState.totalExpenses > 0) (item.totalSpent / uiState.totalExpenses) * 100 else 0.0
-                                BarChartData(
-                                    label = item.category.name,
-                                    value = item.totalSpent,
-                                    color = color,
-                                    percentageText = "${String.format(java.util.Locale.getDefault(), "%.1f", percentage)}%"
+                        val activeCategorySpending = if (selectedCategoryType == 0) uiState.expenseCategorySpending else uiState.incomeCategorySpending
+                        val activeTotal = if (selectedCategoryType == 0) uiState.totalExpenses else uiState.totalIncome
+
+                        if (activeCategorySpending.isEmpty()) {
+                            item {
+                                Spacer(modifier = Modifier.height(32.dp))
+                                Text(
+                                    text = if (selectedCategoryType == 0) "No expenses this month." else "No income this month.",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
+                        } else {
+                            // Pie Chart for spending breakdown
+                            item {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                val titleText = if (selectedCategoryType == 0) "Expense Breakdown" else "Income Breakdown"
+                                Text(
+                                    text = titleText,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                
+                                val pieData = activeCategorySpending.sortedByDescending { it.totalSpent }.map { item ->
+                                    val color = CategoryColors[(item.category.id % CategoryColors.size).toInt()]
+                                    PieChartData(
+                                        label = item.category.name,
+                                        value = item.totalSpent,
+                                        color = color
+                                    )
+                                }
+                                
+                                PieChart(
+                                    data = pieData,
+                                    modifier = Modifier
+                                        .fillMaxWidth(0.6f)
+                                        .padding(vertical = 8.dp)
+                                )
+                                
+                                // Legend
+                                Spacer(modifier = Modifier.height(16.dp))
+                                pieData.forEach { item ->
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(vertical = 4.dp).fillMaxWidth()
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(12.dp)
+                                                .padding(end = 0.dp)
+                                        ) {
+                                            androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                                                drawCircle(color = item.color)
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = item.label,
+                                            fontSize = 14.sp,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        Text(
+                                            text = CurrencyUtils.formatAmount(item.value),
+                                            fontSize = 14.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            item {
+                                Spacer(modifier = Modifier.height(32.dp))
+                                val barTitle = if (selectedCategoryType == 0) "Spending by Category" else "Income by Category"
+                                Text(
+                                    text = barTitle,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
 
-                            HorizontalBarChart(
-                                data = barData,
-                                modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
-                            )
+                                val barData = activeCategorySpending.sortedByDescending { it.totalSpent }.map { item ->
+                                    val color = CategoryColors[(item.category.id % CategoryColors.size).toInt()]
+                                    val percentage = if (activeTotal > 0) (item.totalSpent / activeTotal) * 100 else 0.0
+                                    BarChartData(
+                                        label = item.category.name,
+                                        value = item.totalSpent,
+                                        color = color,
+                                        percentageText = "${String.format(java.util.Locale.getDefault(), "%.1f", percentage)}%"
+                                    )
+                                }
+
+                                HorizontalBarChart(
+                                    data = barData,
+                                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+                                )
+                            }
                         }
                     }
                 }

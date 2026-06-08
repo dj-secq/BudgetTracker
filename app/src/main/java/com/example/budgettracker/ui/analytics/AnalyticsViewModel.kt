@@ -37,13 +37,13 @@ data class AnalyticsUiState(
     val totalIncome: Double = 0.0,
     val totalExpenses: Double = 0.0,
     val bucketStats: List<BucketStats> = emptyList(),
-    val categorySpending: List<CategorySpending> = emptyList(),
+    val expenseCategorySpending: List<CategorySpending> = emptyList(),
+    val incomeCategorySpending: List<CategorySpending> = emptyList(),
     val currentMonth: Int = Calendar.getInstance().get(Calendar.MONTH) + 1,
     val currentYear: Int = Calendar.getInstance().get(Calendar.YEAR)
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
-
 class AnalyticsViewModel(
     private val repository: BudgetRepository,
     private val preferencesRepository: UserPreferencesRepository
@@ -81,15 +81,20 @@ class AnalyticsViewModel(
         )
 
         // Spending by category (monthly)
-        val spendingData = categories.filter { it.type == CategoryType.EXPENSE }.map { category ->
+        val expenseSpendingData = categories.filter { it.type == CategoryType.EXPENSE }.map { category ->
             val sum = transactions.filter { it.categoryId == category.id }.sumOf { it.amount }
             CategorySpending(category, sum)
         }.filter { it.totalSpent > 0 }
 
-        val totalExpenses = spendingData.sumOf { it.totalSpent }
+        val incomeSpendingData = categories.filter { it.type == CategoryType.INCOME }.map { category ->
+            val sum = transactions.filter { it.categoryId == category.id }.sumOf { it.amount }
+            CategorySpending(category, sum)
+        }.filter { it.totalSpent > 0 }
+
+        val totalExpenses = expenseSpendingData.sumOf { it.totalSpent }
         val ruleTitle = "${budgetRule.needsPercent}/${budgetRule.wantsPercent}/${budgetRule.savingsPercent} Budget Rule"
 
-        AnalyticsUiState(ruleTitle, totalIncome, totalExpenses, bucketStats, spendingData, month, year)
+        AnalyticsUiState(ruleTitle, totalIncome, totalExpenses, bucketStats, expenseSpendingData, incomeSpendingData, month, year)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AnalyticsUiState())
 
     fun setMonth(month: Int, year: Int) {
