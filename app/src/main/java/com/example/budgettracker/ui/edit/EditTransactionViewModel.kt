@@ -31,7 +31,7 @@ class EditTransactionViewModel(
     val isSaving = MutableStateFlow(false)
     val transactionFlow = MutableStateFlow<Transaction?>(null)
     
-    val showOverBudgetWarning = MutableStateFlow<Double?>(null)
+    val showOverBudgetWarning = MutableStateFlow<Pair<Double, Boolean>?>(null)
     val showBucketWarning = MutableStateFlow<Pair<String, Double>?>(null)
 
     fun loadTransaction(transactionId: Long) {
@@ -62,9 +62,13 @@ class EditTransactionViewModel(
             // Note: When editing, checking budget limits is slightly complex because we need to subtract the old amount if the category is the same.
             // For simplicity, we fetch the current spent, subtract old amount (if same category), add new amount, and check against limit.
             val limits = repository.getBudgetLimitsForMonth(month, year).first()
-            val limit = limits.find { it.categoryId == categoryId }?.assignedAmount ?: 0.0
+            var limit = limits.find { it.categoryId == categoryId }?.assignedAmount ?: 0.0
+            val prefs = preferencesRepository.generalPreferencesFlow.first()
             
             if (limit > 0) {
+                if (prefs.rolloverBudgetsEnabled) {
+                    limit += repository.getRolloverAmount(categoryId, month, year)
+                }
                 val currentSpent = repository.getTotalSpentByCategory(categoryId, month, year).first() ?: 0.0
                 // Adjust spent if the old transaction was in the same month/year and category
                 val oldCalendar = Calendar.getInstance().apply { timeInMillis = oldTransaction.timestamp }
@@ -77,7 +81,7 @@ class EditTransactionViewModel(
                 }
                 
                 if (adjustedSpent + amount > limit) {
-                    showOverBudgetWarning.value = (adjustedSpent + amount) - limit
+                    showOverBudgetWarning.value = Pair((adjustedSpent + amount) - limit, prefs.strictLimitsEnabled)
                     return@launch
                 }
             }
@@ -145,6 +149,7 @@ class EditTransactionViewModel(
         amount: Double,
         note: String,
         timestamp: Long,
+        classification: ExpenseClassification,
         onComplete: () -> Unit
     ) {
         viewModelScope.launch {
@@ -156,7 +161,7 @@ class EditTransactionViewModel(
                 amount = amount,
                 note = note,
                 timestamp = timestamp,
-                classification = ExpenseClassification.NONE
+                classification = classification
             )
             repository.updateTransaction(updatedTransaction)
             isSaving.value = false

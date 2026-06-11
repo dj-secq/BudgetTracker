@@ -397,17 +397,47 @@ fun AddTransactionScreen(
         )
     }
 
-    // Over budget warning dialog (Strict)
-    overBudgetWarning?.let { excess ->
+    // Over budget warning dialog
+    overBudgetWarning?.let { (excess, isStrict) ->
         AlertDialog(
             onDismissRequest = { viewModel.dismissWarnings() },
             title = { Text("Over Budget") },
-            text = { Text("This transaction exceeds your budget for this category by ₱${String.format(Locale.getDefault(), "%.2f", excess)}.\n\nStrict budget limits are enforced. You cannot save this transaction.") },
+            text = { 
+                if (isStrict) {
+                    Text("This transaction exceeds your budget for this category by ₱${String.format(Locale.getDefault(), "%.2f", excess)}.\n\nStrict budget limits are enforced. You cannot save this transaction.")
+                } else {
+                    Text("This transaction exceeds your budget for this category by ₱${String.format(Locale.getDefault(), "%.2f", excess)}.\n\nDo you want to save it anyway?")
+                }
+            },
             confirmButton = {
                 TextButton(onClick = { viewModel.dismissWarnings() }) {
                     Text("OK")
                 }
-            }
+            },
+            dismissButton = if (!isStrict) {
+                {
+                    TextButton(onClick = {
+                        viewModel.dismissWarnings()
+                        val parsedAmount = amount.toDoubleOrNull()
+                        if (parsedAmount != null && selectedCategoryId != null && selectedAccountId != null) {
+                            viewModel.saveTransaction(
+                                selectedAccountId!!,
+                                selectedCategoryId!!,
+                                parsedAmount,
+                                note,
+                                selectedDateMillis,
+                                selectedClassification,
+                                isRecurring,
+                                if (isRecurring) recurringFrequency else null
+                            ) {
+                                onNavigateBack()
+                            }
+                        }
+                    }) {
+                        Text("Save Anyway")
+                    }
+                }
+            } else null
         )
     }
 

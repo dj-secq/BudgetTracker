@@ -321,7 +321,8 @@ fun EditTransactionScreen(
                                 categoryId = selectedCategoryId!!,
                                 amount = parsedAmount,
                                 note = note,
-                                timestamp = selectedDateMillis
+                                timestamp = selectedDateMillis,
+                                classification = ExpenseClassification.NONE
                             ) {
                                 onNavigateBack()
                             }
@@ -352,16 +353,45 @@ fun EditTransactionScreen(
     }
 
     // Over budget warning dialog
-    overBudgetWarning?.let { excess ->
+    overBudgetWarning?.let { (excess, isStrict) ->
         AlertDialog(
             onDismissRequest = { viewModel.dismissWarnings() },
             title = { Text("Over Budget") },
-            text = { Text("This edit exceeds your budget for this category by ₱${String.format(Locale.getDefault(), "%.2f", excess)}.\n\nYou cannot save this transaction.") },
+            text = { 
+                if (isStrict) {
+                    Text("This edit exceeds your budget for this category by ₱${String.format(Locale.getDefault(), "%.2f", excess)}.\n\nStrict budget limits are enforced. You cannot save this transaction.")
+                } else {
+                    Text("This edit exceeds your budget for this category by ₱${String.format(Locale.getDefault(), "%.2f", excess)}.\n\nDo you want to save it anyway?")
+                }
+            },
             confirmButton = {
                 TextButton(onClick = { viewModel.dismissWarnings() }) {
                     Text("OK")
                 }
-            }
+            },
+            dismissButton = if (!isStrict) {
+                {
+                    TextButton(onClick = {
+                        viewModel.dismissWarnings()
+                        val parsedAmount = amount.toDoubleOrNull()
+                        if (parsedAmount != null && selectedCategoryId != null && selectedAccountId != null) {
+                            viewModel.saveTransactionWithoutLimits(
+                                transactionId = transactionId,
+                                accountId = selectedAccountId!!,
+                                categoryId = selectedCategoryId!!,
+                                amount = parsedAmount,
+                                note = note,
+                                timestamp = selectedDateMillis,
+                                classification = selectedClassification
+                            ) {
+                                onNavigateBack()
+                            }
+                        }
+                    }) {
+                        Text("Save Anyway")
+                    }
+                }
+            } else null
         )
     }
 }

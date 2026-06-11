@@ -43,6 +43,8 @@ import com.example.budgettracker.ui.analytics.AnalyticsScreen
 import com.example.budgettracker.ui.analytics.AnalyticsViewModel
 import com.example.budgettracker.ui.assign.AssignBudgetScreen
 import com.example.budgettracker.ui.assign.AssignBudgetViewModel
+import com.example.budgettracker.ui.debt.DebtTrackerScreen
+import com.example.budgettracker.ui.debt.DebtTrackerViewModel
 import com.example.budgettracker.ui.home.HomeScreen
 import com.example.budgettracker.ui.home.HomeViewModel
 import com.example.budgettracker.di.AppContainer
@@ -91,7 +93,7 @@ fun BudgetApp(appContainer: com.example.budgettracker.di.AppContainer) {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
-                    return HomeViewModel(appContainer.budgetRepository) as T
+                    return HomeViewModel(appContainer.budgetRepository, appContainer.userPreferencesRepository) as T
                 }
                 if (modelClass.isAssignableFrom(AddTransactionViewModel::class.java)) {
                     return AddTransactionViewModel(appContainer.budgetRepository, appContainer.userPreferencesRepository) as T
@@ -103,7 +105,10 @@ fun BudgetApp(appContainer: com.example.budgettracker.di.AppContainer) {
                     return AnalyticsViewModel(appContainer.budgetRepository, appContainer.userPreferencesRepository) as T
                 }
                 if (modelClass.isAssignableFrom(AssignBudgetViewModel::class.java)) {
-                    return AssignBudgetViewModel(appContainer.budgetRepository) as T
+                    return AssignBudgetViewModel(appContainer.budgetRepository, appContainer.userPreferencesRepository) as T
+                }
+                if (modelClass.isAssignableFrom(DebtTrackerViewModel::class.java)) {
+                    return DebtTrackerViewModel(appContainer.budgetRepository) as T
                 }
                 if (modelClass.isAssignableFrom(TransactionsViewModel::class.java)) {
                     return TransactionsViewModel(appContainer.budgetRepository) as T
@@ -219,7 +224,8 @@ fun BudgetApp(appContainer: com.example.budgettracker.di.AppContainer) {
                     viewModel = viewModel(factory = factory),
                     onNavigateToAddTransaction = { navController.navigate("add_transaction") },
                     onNavigateToAssignBudget = { navController.navigate("assign_budget") },
-                    onNavigateToSettings = { navController.navigate("settings") }
+                    onNavigateToSettings = { navController.navigate("settings") },
+                    onNavigateToDebtTracker = { navController.navigate("debt_tracker") }
                 )
             }
             composable("transactions") {
@@ -291,6 +297,13 @@ fun BudgetApp(appContainer: com.example.budgettracker.di.AppContainer) {
                 val recurringViewModel: RecurringTransactionsViewModel = viewModel(factory = factory)
                 RecurringTransactionsScreen(
                     viewModel = recurringViewModel,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable("debt_tracker") {
+                val viewModel: DebtTrackerViewModel = viewModel(factory = factory)
+                DebtTrackerScreen(
+                    viewModel = viewModel,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }

@@ -29,6 +29,13 @@ class SettingsViewModel(
             SharingStarted.WhileSubscribed(5000),
             null
         )
+        
+    val generalPrefs = preferencesRepository.generalPreferencesFlow
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            null
+        )
 
     fun updateRule(needs: Int, wants: Int, savings: Int) {
         if (needs + wants + savings == 100) {
@@ -41,6 +48,12 @@ class SettingsViewModel(
     fun updateThemeMode(mode: ThemeMode) {
         viewModelScope.launch {
             preferencesRepository.updateThemeMode(mode)
+        }
+    }
+    
+    fun updateGeneralPreferences(reminders: Boolean, rollover: Boolean, strict: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.updateGeneralPreferences(reminders, rollover, strict)
         }
     }
 

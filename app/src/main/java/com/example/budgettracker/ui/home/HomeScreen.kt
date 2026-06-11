@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.MoneyOff
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -54,6 +56,7 @@ fun HomeScreen(
     onNavigateToAddTransaction: () -> Unit,
     onNavigateToAssignBudget: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    onNavigateToDebtTracker: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -172,6 +175,50 @@ fun HomeScreen(
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                             items(uiState.accounts) { account ->
                                 AccountCard(account)
+                            }
+                        }
+                    }
+                }
+
+                // Gamification Streaks & Debt Tracker
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Gamification Card
+                        Card(
+                            modifier = Modifier.weight(1f),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Filled.Star, contentDescription = "Streaks", tint = MaterialTheme.colorScheme.onTertiaryContainer)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("No-Spend Streaks", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("Current: ${uiState.currentStreak} days", color = MaterialTheme.colorScheme.onTertiaryContainer, fontSize = 14.sp)
+                                Text("Longest: ${uiState.longestStreak} days", color = MaterialTheme.colorScheme.onTertiaryContainer, fontSize = 14.sp)
+                            }
+                        }
+
+                        // Debt Tracker Shortcut
+                        Card(
+                            modifier = Modifier.weight(1f),
+                            onClick = onNavigateToDebtTracker,
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Filled.MoneyOff, contentDescription = "Debts", tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Debt Tracker", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("Who owes you &", color = MaterialTheme.colorScheme.onSecondaryContainer, fontSize = 14.sp)
+                                Text("Who you owe", color = MaterialTheme.colorScheme.onSecondaryContainer, fontSize = 14.sp)
                             }
                         }
                     }

@@ -26,6 +26,9 @@ interface TransactionDao {
     @Query("SELECT SUM(amount) FROM transactions WHERE categoryId = :categoryId AND timestamp >= :startDate AND timestamp <= :endDate")
     fun getTotalAmountByCategoryAndDateRange(categoryId: Long, startDate: Long, endDate: Long): Flow<Double?>
 
+    @Query("SELECT SUM(amount) FROM transactions WHERE categoryId = :categoryId AND timestamp < :endDate")
+    suspend fun getTotalSpentBeforeDate(categoryId: Long, endDate: Long): Double?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(transaction: Transaction): Long
 

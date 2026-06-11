@@ -16,6 +16,8 @@ import androidx.room.withTransaction
 import com.example.budgettracker.data.local.entity.RecurringTransaction
 import com.example.budgettracker.data.local.entity.SavingsGoal
 import com.example.budgettracker.data.local.entity.Transaction
+import com.example.budgettracker.data.local.entity.Debt
+import com.example.budgettracker.data.local.dao.DebtDao
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import java.util.Calendar
@@ -27,7 +29,8 @@ class BudgetRepository(
     private val budgetLimitDao: BudgetLimitDao,
     private val transactionDao: TransactionDao,
     private val savingsGoalDao: SavingsGoalDao,
-    private val recurringTransactionDao: RecurringTransactionDao
+    private val recurringTransactionDao: RecurringTransactionDao,
+    private val debtDao: DebtDao
 ) {
     // Accounts
     fun getAllAccounts(): Flow<List<Account>> = accountDao.getAllAccounts()
@@ -61,6 +64,25 @@ class BudgetRepository(
                 )
             )
         }
+    }
+
+    suspend fun getRolloverAmount(categoryId: Long, currentMonth: Int, currentYear: Int): Double {
+        val calendar = Calendar.getInstance().apply {
+            set(Calendar.YEAR, currentYear)
+            set(Calendar.MONTH, currentMonth - 1)
+            set(Calendar.DAY_OF_MONTH, 1)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val startOfCurrentMonth = calendar.timeInMillis
+
+        val totalAssignedBefore = budgetLimitDao.getTotalAssignedBeforeMonth(categoryId, currentMonth, currentYear) ?: 0.0
+        val totalSpentBefore = transactionDao.getTotalSpentBeforeDate(categoryId, startOfCurrentMonth) ?: 0.0
+
+        val rollover = totalAssignedBefore - totalSpentBefore
+        return if (rollover > 0) rollover else 0.0 // Ensure we don't return negative rollover for simplicity
     }
 
     // Transactions
@@ -183,6 +205,12 @@ class BudgetRepository(
     suspend fun insertRecurringTransaction(recurringTransaction: RecurringTransaction): Long = recurringTransactionDao.insertRecurringTransaction(recurringTransaction)
     suspend fun updateRecurringTransaction(recurringTransaction: RecurringTransaction) = recurringTransactionDao.updateRecurringTransaction(recurringTransaction)
     suspend fun deleteRecurringTransaction(recurringTransaction: RecurringTransaction) = recurringTransactionDao.deleteRecurringTransaction(recurringTransaction)
+
+    // Debts
+    fun getAllDebts(): Flow<List<Debt>> = debtDao.getAllDebts()
+    suspend fun insertDebt(debt: Debt): Long = debtDao.insertDebt(debt)
+    suspend fun updateDebt(debt: Debt) = debtDao.updateDebt(debt)
+    suspend fun deleteDebt(debt: Debt) = debtDao.deleteDebt(debt)
 
     // Export & Import
     suspend fun exportData(): BackupData {

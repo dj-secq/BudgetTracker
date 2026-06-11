@@ -37,6 +37,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier
 ) {
     val budgetRule by viewModel.budgetRule.collectAsState()
+    val generalPrefs by viewModel.generalPrefs.collectAsState()
 
     var needs by remember(budgetRule) { mutableFloatStateOf(budgetRule?.needsPercent?.toFloat() ?: 50f) }
     var wants by remember(budgetRule) { mutableFloatStateOf(budgetRule?.wantsPercent?.toFloat() ?: 30f) }
@@ -105,6 +106,75 @@ fun SettingsScreen(
                         Text(mode.name.lowercase().capitalize())
                     }
                 }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "General Preferences",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+
+            // Daily Reminders Toggle
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("Daily Reminders", fontWeight = FontWeight.Medium)
+                    Text("Notify me at 8 PM if I haven't logged anything", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = generalPrefs?.dailyRemindersEnabled ?: false,
+                    onCheckedChange = { 
+                        generalPrefs?.let { prefs ->
+                            viewModel.updateGeneralPreferences(it, prefs.rolloverBudgetsEnabled, prefs.strictLimitsEnabled)
+                        }
+                    }
+                )
+            }
+
+            // Rollover Budgets Toggle
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Rollover Budgets", fontWeight = FontWeight.Medium)
+                    Text("Carry over unspent budget to the next month", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = generalPrefs?.rolloverBudgetsEnabled ?: false,
+                    onCheckedChange = {
+                        generalPrefs?.let { prefs ->
+                            viewModel.updateGeneralPreferences(prefs.dailyRemindersEnabled, it, prefs.strictLimitsEnabled)
+                        }
+                    }
+                )
+            }
+
+            // Strict Limits Toggle
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Strict Budget Limits", fontWeight = FontWeight.Medium)
+                    Text("Prevent saving a transaction if it exceeds budget", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = generalPrefs?.strictLimitsEnabled ?: true,
+                    onCheckedChange = {
+                        generalPrefs?.let { prefs ->
+                            viewModel.updateGeneralPreferences(prefs.dailyRemindersEnabled, prefs.rolloverBudgetsEnabled, it)
+                        }
+                    }
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))

@@ -34,7 +34,7 @@ class AddTransactionViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val isSaving = MutableStateFlow(false)
-    val showOverBudgetWarning = MutableStateFlow<Double?>(null) // category limit exceeded by
+    val showOverBudgetWarning = MutableStateFlow<Pair<Double, Boolean>?>(null) // category limit exceeded by, isStrict
     val showBucketWarning = MutableStateFlow<Pair<String, Double>?>(null) // bucket name and amount exceeded by
 
     fun onConfirmSave(
@@ -55,12 +55,16 @@ class AddTransactionViewModel(
             
             // 1. Check Category Limit
             val limits = repository.getBudgetLimitsForMonth(month, year).first()
-            val limit = limits.find { it.categoryId == categoryId }?.assignedAmount ?: 0.0
+            var limit = limits.find { it.categoryId == categoryId }?.assignedAmount ?: 0.0
+            val prefs = preferencesRepository.generalPreferencesFlow.first()
             
             if (limit > 0) {
+                if (prefs.rolloverBudgetsEnabled) {
+                    limit += repository.getRolloverAmount(categoryId, month, year)
+                }
                 val spent = repository.getTotalSpentByCategory(categoryId, month, year).first() ?: 0.0
                 if (spent + amount > limit) {
-                    showOverBudgetWarning.value = (spent + amount) - limit
+                    showOverBudgetWarning.value = Pair((spent + amount) - limit, prefs.strictLimitsEnabled)
                     return@launch
                 }
             }

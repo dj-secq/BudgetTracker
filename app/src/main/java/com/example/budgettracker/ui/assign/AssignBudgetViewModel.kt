@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import com.example.budgettracker.data.repository.UserPreferencesRepository
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -21,7 +22,8 @@ import java.util.Calendar
 data class AssignBudgetItem(
     val category: Category,
     val limit: Double,
-    val spent: Double
+    val spent: Double,
+    val rollover: Double = 0.0
 )
 
 data class AssignBudgetUiState(
@@ -33,7 +35,8 @@ data class AssignBudgetUiState(
 @OptIn(ExperimentalCoroutinesApi::class)
 
 class AssignBudgetViewModel(
-    private val repository: BudgetRepository
+    private val repository: BudgetRepository,
+    private val preferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     private val _monthYear = MutableStateFlow(
@@ -52,8 +55,9 @@ class AssignBudgetViewModel(
     val uiState: StateFlow<AssignBudgetUiState> = combine(
         repository.getAllCategories(),
         monthlyDataFlow,
-        _monthYear
-    ) { categories: List<Category>, monthlyData: Pair<List<@JvmWildcard Any>, List<BudgetLimit>>, monthYear: Pair<Int, Int> ->
+        _monthYear,
+        preferencesRepository.generalPreferencesFlow
+    ) { categories, monthlyData, monthYear, prefs ->
         @Suppress("UNCHECKED_CAST")
         val monthTransactions = monthlyData.first as List<com.example.budgettracker.data.local.entity.Transaction>
         val budgetLimits = monthlyData.second
@@ -62,9 +66,10 @@ class AssignBudgetViewModel(
         val expenseCategories = categories.filter { it.type == CategoryType.EXPENSE }
 
         val items = expenseCategories.map { category ->
-            val limit = budgetLimits.find { it.categoryId == category.id }?.assignedAmount ?: 0.0
+            val baseLimit = budgetLimits.find { it.categoryId == category.id }?.assignedAmount ?: 0.0
             val spent = monthTransactions.filter { it.categoryId == category.id }.sumOf { it.amount }
-            AssignBudgetItem(category, limit, spent)
+            val rollover = if (prefs.rolloverBudgetsEnabled) repository.getRolloverAmount(category.id, month, year) else 0.0
+            AssignBudgetItem(category, baseLimit + rollover, spent, rollover)
         }
 
         AssignBudgetUiState(items, month, year)

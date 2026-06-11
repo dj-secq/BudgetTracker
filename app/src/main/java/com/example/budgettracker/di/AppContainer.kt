@@ -35,7 +35,8 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
             budgetLimitDao = database.budgetLimitDao(),
             transactionDao = database.transactionDao(),
             savingsGoalDao = database.savingsGoalDao(),
-            recurringTransactionDao = database.recurringTransactionDao()
+            recurringTransactionDao = database.recurringTransactionDao(),
+            debtDao = database.debtDao()
         )
     }
 

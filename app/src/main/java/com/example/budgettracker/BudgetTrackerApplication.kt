@@ -35,6 +35,31 @@ class BudgetTrackerApplication : Application() {
             recurringWorkRequest
         )
         
+        // Schedule Daily Reminder Worker at 8 PM
+        val currentDate = java.util.Calendar.getInstance()
+        val dueDate = java.util.Calendar.getInstance()
+        
+        // Set Execution around 20:00:00 (8 PM)
+        dueDate.set(java.util.Calendar.HOUR_OF_DAY, 20)
+        dueDate.set(java.util.Calendar.MINUTE, 0)
+        dueDate.set(java.util.Calendar.SECOND, 0)
+        
+        if (dueDate.before(currentDate)) {
+            dueDate.add(java.util.Calendar.HOUR_OF_DAY, 24)
+        }
+        
+        val timeDiff = dueDate.timeInMillis - currentDate.timeInMillis
+        
+        val dailyReminderRequest = PeriodicWorkRequestBuilder<com.example.budgettracker.worker.DailyReminderWorker>(24, TimeUnit.HOURS)
+            .setInitialDelay(timeDiff, TimeUnit.MILLISECONDS)
+            .build()
+            
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "daily_reminder_work",
+            ExistingPeriodicWorkPolicy.KEEP,
+            dailyReminderRequest
+        )
+        
         CoroutineScope(Dispatchers.IO).launch {
             com.example.budgettracker.data.seedDatabaseIfEmpty(container.budgetRepository)
         }
